@@ -1,0 +1,14 @@
+{
+  "name": "annadaan-selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium Web Driver E2E Automated Test Suite & Excel Report Generator for Annadaan Connect",
+  "main": "tests/login-tests.js",
+  "scripts": {
+    "test": "node tests/login-tests.js"
+  },
+  "dependencies": {
+    "chromedriver": "^114.0.0",
+    "selenium-webdriver": "^4.10.0",
+    "xlsx": "^0.18.5"
+  }
+}

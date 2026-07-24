@@ -10,6 +10,7 @@
     "start:mobile": "npm --prefix annadaan-mobile start",
     "load-test": "npm --prefix backend run load-test",
     "db:view": "npm --prefix backend run db:view",
-    "seed": "npm --prefix backend run seed"
+    "seed": "npm --prefix backend run seed",
+    "test:selenium": "npm --prefix selenium-tests test"
   }
 }
