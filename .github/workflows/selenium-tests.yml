@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   master-e2e-and-security:
-    name: Run 300 Web & 300 Mobile E2E Tests & Generate Excel Reports
+    name: Run 1,750 Total Test Cases (350 Per Suite) & Generate Excel Reports
     runs-on: ubuntu-latest
 
     steps:
@@ -29,39 +29,50 @@ jobs:
           npm install
           cd selenium-tests && npm install
 
-      - name: 🧪 Execute 300 Web Selenium E2E Tests
+      - name: 🧪 Execute 350 Web Selenium E2E Test Cases
         run: |
           node selenium-tests/tests/login-tests.js
 
-      - name: 📱 Execute 300 Mobile Appium Android E2E Tests
+      - name: 📱 Execute 350 Mobile Appium Android E2E Test Cases
         run: |
           node annadaan-mobile/tests/mega_android_1100.test.js
 
-      - name: 🛡️ Execute Web & Backend Security Review Audits
+      - name: 🔑 Execute 350 Authentication & RBAC Test Cases
+        run: |
+          node backend/scripts/auth-tests.js
+
+      - name: 🛡️ Execute 350 Web & Backend Security Audit Test Cases
         run: |
           node selenium-tests/scripts/generateWebSecuritySuite.js
           node backend/scripts/generateSecuritySuite.js
 
-      - name: 📤 Upload Web 300 E2E Excel & HTML Report Artifacts
+      - name: 📤 Upload Web 350 E2E Excel & HTML Report Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Web-300-Selenium-E2E-Report
+          name: Web-350-Selenium-E2E-Report
           path: |
             selenium-tests/test_results.xlsx
             selenium-tests/execution-report.html
           retention-days: 30
 
-      - name: 📤 Upload Mobile 300 E2E Excel Report Artifacts
+      - name: 📤 Upload Mobile 350 E2E Excel Report Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Mobile-300-Appium-E2E-Report
+          name: Mobile-350-Appium-E2E-Report
           path: annadaan-mobile/mobile-test-results.xlsx
+          retention-days: 30
+
+      - name: 📤 Upload Auth 350 Excel Report Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auth-350-Test-Report
+          path: backend/auth-test-results.xlsx
           retention-days: 30
 
       - name: 📤 Upload Security Audit Workbooks & Summaries
         uses: actions/upload-artifact@v4
         with:
-          name: Security-Review-Workbooks-Score-72
+          name: Security-350-Audit-Workbooks-Score-72
           path: |
             selenium-tests/web-security-findings.xlsx
             selenium-tests/web-executive-summary.md
