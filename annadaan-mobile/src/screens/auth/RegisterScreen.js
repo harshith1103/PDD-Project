@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Colors from '../../utils/colors';
-import api, { getBaseUrl } from '../../api/axios';
+import api, { getBaseUrl, formatApiEndpoint } from '../../api/axios';
 import { setCustomApiUrl, getCustomApiUrl } from '../../utils/storage';
 
 const ROLES = [
@@ -48,7 +48,7 @@ const RegisterScreen = ({ navigation }) => {
     const activeUrl = await getBaseUrl();
     setCurrentUrl(activeUrl);
     const custom = await getCustomApiUrl();
-    setInputUrl(custom || activeUrl);
+    setInputUrl(custom ? formatApiEndpoint(custom) : activeUrl);
   };
 
   const validate = () => {
@@ -90,15 +90,13 @@ const RegisterScreen = ({ navigation }) => {
   const handleTestConnection = async () => {
     setTesting(true);
     try {
-      let target = inputUrl.trim().replace(/\/$/, '');
-      if (!target.endsWith('/api')) target += '/api';
-
+      const target = formatApiEndpoint(inputUrl);
       const response = await api.get('/health', { baseURL: target, timeout: 5000 });
       if (response.data?.success) {
         Toast.show({
           type: 'success',
           text1: 'Server Connected! ✅',
-          text2: response.data.message || 'Annadaan API is online.',
+          text2: `Connected to ${target}`,
         });
       } else {
         Toast.show({
@@ -119,16 +117,17 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleSaveServerUrl = async () => {
-    let target = inputUrl.trim();
-    if (target.length > 0 && !target.startsWith('http://') && !target.startsWith('https://')) {
-      target = `http://${target}`;
+    const target = formatApiEndpoint(inputUrl);
+    if (target) {
+      await setCustomApiUrl(target);
+    } else {
+      await setCustomApiUrl(null);
     }
-    await setCustomApiUrl(target);
     await loadServerUrl();
     setModalVisible(false);
     Toast.show({
       type: 'success',
-      text1: 'Server IP Saved',
+      text1: 'Server IP Saved ✅',
       text2: `Updated API endpoint to ${target || 'default'}`,
     });
   };

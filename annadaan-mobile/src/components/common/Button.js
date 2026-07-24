@@ -61,8 +61,8 @@ const Button = ({
         />
       ) : (
         <>
-          {icon}
-          <Text style={[getTextStyle(), icon && { marginLeft: 8 }, textStyle]}>{title}</Text>
+          {icon ? icon : null}
+          <Text style={[getTextStyle(), icon ? { marginLeft: 8 } : null, textStyle]}>{title}</Text>
         </>
       )}
     </TouchableOpacity>

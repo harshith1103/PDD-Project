@@ -32,8 +32,20 @@ const DonationCard = ({ donation, onPress, showDonor = false, showDistance }) =>
           <Text style={styles.quantity}>{donation.quantity}</Text>
           {showDonor && donation.donor && (
             <Text style={styles.meta}>
-              By {donation.donor.name || donation.donor.email || 'Unknown'}
+              Donor: {donation.donor.name || donation.donor.email || 'Donor'} {donation.donor.phone ? `(${donation.donor.phone})` : ''}
             </Text>
+          )}
+          {donation.matchedRecipient && (
+            <View style={styles.recipientBox}>
+              <Text style={styles.recipientMeta}>
+                🏠 Recipient: {donation.matchedRecipient.name} {donation.matchedRecipient.phone ? `(${donation.matchedRecipient.phone})` : ''}
+              </Text>
+              {donation.matchedRecipient.address && (
+                <Text style={styles.recipientAddress} numberOfLines={1}>
+                  Deliver To: {donation.matchedRecipient.address}
+                </Text>
+              )}
+            </View>
           )}
           <View style={styles.footerRow}>
             <Text style={[styles.expiry, { color: getExpiryColor() }]}>
@@ -45,7 +57,7 @@ const DonationCard = ({ donation, onPress, showDonor = false, showDistance }) =>
           </View>
           {donation.pickupAddress && (
             <Text style={styles.address} numberOfLines={1}>
-              📍 {donation.pickupAddress}
+              📍 Pickup: {donation.pickupAddress}
             </Text>
           )}
           <Text style={styles.created}>{formatDate(donation.createdAt)}</Text>
@@ -100,6 +112,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 2,
+  },
+  recipientBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    padding: 6,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  recipientMeta: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  recipientAddress: {
+    fontSize: 11,
+    color: '#1E3A8A',
+    marginTop: 1,
   },
   footerRow: {
     flexDirection: 'row',

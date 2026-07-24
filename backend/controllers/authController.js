@@ -6,8 +6,14 @@ const User = require('../models/User');
 // Validation rules
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('email')
+    .trim()
+    .isEmail().withMessage('Valid email is required')
+    .matches(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i).withMessage('Email must be an official @gmail.com address'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .matches(/^\d{10}$/).withMessage('Phone number must be exactly 10 digits'),
   body('role').isIn(['donor', 'volunteer', 'recipient', 'admin']).withMessage('Valid role is required'),
 ];
 
@@ -55,6 +61,7 @@ const register = async (req, res) => {
       phone: phone || '',
       address: address || '',
       location: location || { lat: 0, lng: 0 },
+      createdAt: new Date(),
     });
 
     const token = generateToken(user._id);

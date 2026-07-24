@@ -73,10 +73,19 @@ const CreateDonation = ({ navigation }) => {
   };
 
   const onDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setExpiryWindow(selectedDate);
+    try {
+      setShowDatePicker(Platform.OS === 'ios');
+      if (selectedDate) {
+        setExpiryWindow(selectedDate);
+      }
+    } catch {
+      setShowDatePicker(false);
     }
+  };
+
+  const handleSetHours = (hours) => {
+    setExpiryWindow(new Date(Date.now() + hours * 3600000));
+    setShowDatePicker(false);
   };
 
   return (
@@ -100,7 +109,7 @@ const CreateDonation = ({ navigation }) => {
             label="Food Type *"
             value={foodType}
             onChangeText={setFoodType}
-            placeholder="e.g. Rice and Dal, Fresh Fruits"
+            placeholder="e.g. Cooked Rice, Vegetables, Fruits"
             error={errors.foodType}
           />
 
@@ -108,7 +117,7 @@ const CreateDonation = ({ navigation }) => {
             label="Quantity *"
             value={quantity}
             onChangeText={setQuantity}
-            placeholder="e.g. 15 kg, 50 meals, 10 liters"
+            placeholder="e.g. 10 kg, 20 servings"
             error={errors.quantity}
           />
 
@@ -116,7 +125,7 @@ const CreateDonation = ({ navigation }) => {
             label="Description"
             value={description}
             onChangeText={setDescription}
-            placeholder="Any additional details about the food..."
+            placeholder="Optional details about freshness, packaging, etc."
             multiline
             numberOfLines={3}
           />
@@ -125,11 +134,10 @@ const CreateDonation = ({ navigation }) => {
             label="Pickup Address *"
             value={pickupAddress}
             onChangeText={setPickupAddress}
-            placeholder="Full pickup address"
+            placeholder="e.g. MG Road, Bangalore"
             error={errors.pickupAddress}
           />
 
-          <Text style={styles.label}>Pickup Location</Text>
           <View style={styles.locationRow}>
             <View style={styles.locationInput}>
               <Input
@@ -151,15 +159,45 @@ const CreateDonation = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Expiry Picker */}
-          <Text style={styles.label}>Expiry Window</Text>
+          {/* Expiry Window */}
+          <Text style={styles.label}>Expiry Window *</Text>
+          <View style={styles.hoursContainer}>
+            {[
+              { label: '3h', hours: 3 },
+              { label: '6h', hours: 6 },
+              { label: '12h', hours: 12 },
+              { label: '24h', hours: 24 },
+            ].map((item) => {
+              const targetTime = Date.now() + item.hours * 3600000;
+              const isSelected = Math.abs(expiryWindow.getTime() - targetTime) < 300000;
+              return (
+                <TouchableOpacity
+                  key={item.hours}
+                  style={[styles.hourChip, isSelected && styles.hourChipSelected]}
+                  onPress={() => handleSetHours(item.hours)}
+                >
+                  <Text style={[styles.hourText, isSelected && styles.hourTextSelected]}>
+                    +{item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <Button
             title={`📅 ${formatDate(expiryWindow.toISOString(), true)}`}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => {
+              try {
+                setShowDatePicker(true);
+              } catch {
+                setShowDatePicker(false);
+              }
+            }}
             variant="secondary"
             style={{ marginBottom: 16 }}
           />
-          {showDatePicker && (
+
+          {showDatePicker ? (
             <DateTimePicker
               value={expiryWindow}
               mode="datetime"
@@ -167,7 +205,7 @@ const CreateDonation = ({ navigation }) => {
               onChange={onDateChange}
               minimumDate={new Date()}
             />
-          )}
+          ) : null}
 
           <Button
             title="Submit Donation"
@@ -223,6 +261,33 @@ const styles = StyleSheet.create({
   },
   locationInput: {
     flex: 1,
+  },
+  hoursContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  hourChip: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  hourChipSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryFaded,
+  },
+  hourText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  hourTextSelected: {
+    color: Colors.primary,
+    fontWeight: '700',
   },
 });
 

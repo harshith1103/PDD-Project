@@ -111,14 +111,14 @@ const UploadProof = ({ route, navigation }) => {
           <Text style={styles.detailLabel}>Pickup</Text>
           <Text style={styles.detailValue}>{donation.pickupAddress || 'N/A'}</Text>
 
-          {donation.matchedRecipient && (
+          {donation.matchedRecipient ? (
             <>
               <Text style={styles.detailLabel}>Recipient</Text>
               <Text style={styles.detailValue}>
                 {donation.matchedRecipient.name}{donation.matchedRecipient.address ? ` — ${donation.matchedRecipient.address}` : ''}
               </Text>
             </>
-          )}
+          ) : null}
 
           <Text style={styles.detailLabel}>Expiry</Text>
           <Text style={styles.detailValue}>{formatDate(donation.expiryWindow, true)}</Text>

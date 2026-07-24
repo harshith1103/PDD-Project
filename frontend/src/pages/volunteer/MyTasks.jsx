@@ -36,10 +36,22 @@ const MyTasks = () => {
     }
   };
 
-  const handleAcceptClick = (task) => {
-    setSelectedTask(task);
-    setSelectedRecipientId('');
-    setShowModal(true);
+  const handleAcceptClick = async (task) => {
+    // If recipient is already matched/requested by recipient
+    const recipientId = task.matchedRecipient?._id || (typeof task.matchedRecipient === 'string' ? task.matchedRecipient : null);
+    if (recipientId) {
+      try {
+        await API.put(`/volunteers/tasks/${task._id}/accept`, { recipientId });
+        toast.success('Task accepted! Collect from donor & deliver to recipient.');
+        fetchData();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to accept task');
+      }
+    } else {
+      setSelectedTask(task);
+      setSelectedRecipientId('');
+      setShowModal(true);
+    }
   };
 
   const confirmAccept = async () => {
@@ -85,30 +97,47 @@ const MyTasks = () => {
       
       {/* Available Tasks Section */}
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Tasks</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Delivery Tasks</h2>
         <p className="text-gray-500 mb-6">{availableTasks.length} task(s) waiting for a volunteer</p>
         
         {availableTasks.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-800">No available tasks</h3>
+            <h3 className="text-lg font-semibold text-gray-800">No available tasks right now</h3>
+            <p className="text-gray-500 text-sm mt-1">Pending food donations and recipient requests will appear here live.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {availableTasks.map(task => (
-              <div key={task._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+              <div key={task._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{task.foodType}</h3>
-                  <div className="text-sm text-gray-600 mt-2 space-y-1">
-                    <p><span className="font-medium">Quantity:</span> {task.quantity}</p>
-                    <p><span className="font-medium">Pickup:</span> {task.pickupAddress}</p>
-                    <p><span className="font-medium">Donor:</span> {task.donor?.name}</p>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">{task.foodType}</h3>
+                    <StatusBadge status={task.status} />
+                  </div>
+                  <div className="text-sm text-gray-600 mt-2 space-y-1.5">
+                    <p><span className="font-medium text-gray-700">Quantity:</span> {task.quantity}</p>
+                    <p><span className="font-medium text-gray-700">Donor:</span> {task.donor?.name || 'Donor'} ({task.donor?.phone || 'No phone'})</p>
+                    <p><span className="font-medium text-gray-700">Pickup Address:</span> {task.pickupAddress}</p>
+                    {task.matchedRecipient ? (
+                      <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl text-blue-800 text-xs space-y-1">
+                        <p className="font-semibold text-blue-900 flex items-center gap-1">
+                          <span>🏠</span>
+                          <span>Recipient Delivery Details:</span>
+                        </p>
+                        <p className="font-medium text-gray-900">{task.matchedRecipient.name} ({task.matchedRecipient.phone || 'No phone'})</p>
+                        <p className="text-blue-700">Deliver To: {task.matchedRecipient.address}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">No recipient selected yet (you can select upon accepting)</p>
+                    )}
                   </div>
                 </div>
                 <button 
                   onClick={() => handleAcceptClick(task)}
-                  className="mt-4 w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl transition-colors"
+                  className="mt-4 w-full px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
                 >
-                  Accept Task
+                  <span>🚴</span>
+                  <span>{task.matchedRecipient ? 'Accept Request & Deliver' : 'Accept Pickup Task'}</span>
                 </button>
               </div>
             ))}
@@ -118,14 +147,14 @@ const MyTasks = () => {
 
       {/* My Assigned Tasks Section */}
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">My Tasks</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">My Assigned Tasks</h2>
         <p className="text-gray-500 mb-6">{tasks.length} task(s) assigned to you</p>
 
         {tasks.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <div className="text-5xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No tasks yet</h3>
-            <p className="text-gray-500">Tasks will appear here when you accept them.</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No tasks assigned yet</h3>
+            <p className="text-gray-500">Accepted pickup and delivery tasks will appear here.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -139,9 +168,9 @@ const MyTasks = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
                       <p><span className="font-medium">Quantity:</span> {task.quantity}</p>
-                      <p><span className="font-medium">Pickup:</span> {task.pickupAddress}</p>
-                      <p><span className="font-medium">Donor:</span> {task.donor?.name} ({task.donor?.phone})</p>
-                      <p><span className="font-medium">Recipient:</span> {task.matchedRecipient?.name} — {task.matchedRecipient?.address}</p>
+                      <p><span className="font-medium">Pickup Address:</span> {task.pickupAddress}</p>
+                      <p><span className="font-medium">Donor:</span> {task.donor?.name} ({task.donor?.phone || 'N/A'})</p>
+                      <p><span className="font-medium">Recipient:</span> {task.matchedRecipient?.name || 'Pending'} — {task.matchedRecipient?.address || 'N/A'}</p>
                       <p><span className="font-medium">Created:</span> {formatDate(task.createdAt)}</p>
                     </div>
                     {task.proofOfDelivery && (
@@ -154,7 +183,14 @@ const MyTasks = () => {
 
                   <div className="flex flex-col gap-2 min-w-[180px]">
                     {task.status === 'matched' && (
-                      <button onClick={() => updateStatus(task._id, 'picked_up')} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-xl transition-colors">Mark Picked Up</button>
+                      <button onClick={() => updateStatus(task._id, 'picked_up')} className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                        🚴 Picked Up From Donor
+                      </button>
+                    )}
+                    {task.status === 'picked_up' && (
+                      <button onClick={() => updateStatus(task._id, 'delivered')} className="px-4 py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                        ✅ Delivered to Recipient
+                      </button>
                     )}
                   </div>
                 </div>

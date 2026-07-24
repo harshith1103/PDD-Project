@@ -49,7 +49,7 @@ const createDonation = async (req, res) => {
   }
 };
 
-// @desc    Get all donations (admin/volunteer)
+// @desc    Get all donations (admin/volunteer/recipient)
 // @route   GET /api/donations
 const getAllDonations = async (req, res) => {
   try {
@@ -58,9 +58,13 @@ const getAllDonations = async (req, res) => {
     if (status) filter.status = status;
     if (donor) filter.donor = donor;
 
-    // If user is a recipient, restrict to their incoming donations
+    // If user is a recipient, show donations matched to them OR available pending/unmatched donations from donors
     if (req.user && req.user.role === 'recipient') {
-      filter.matchedRecipient = req.user._id;
+      filter.$or = [
+        { matchedRecipient: req.user._id },
+        { status: 'pending' },
+        { status: 'matched', matchedRecipient: null },
+      ];
     }
 
     const donations = await Donation.find(filter)
@@ -220,6 +224,114 @@ const getPublicFeed = async (req, res) => {
     res.status(500).json({ success: false, data: null, message: 'Server error fetching public feed' });
   }
 };
+// @desc    Recipient requests / selects an available food donation from a donor
+// @route   PUT /api/donations/:id/request
+const requestDonation = async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ success: false, data: null, message: 'Donation not found' });
+    }
+
+    // Check user is registered as recipient
+    if (req.user.role !== 'recipient') {
+      return res.status(403).json({
+        success: false,
+        data: null,
+        message: 'Only registered recipients can request food options',
+      });
+    }
+
+    // Ensure recipient is not the donor
+    if (String(donation.donor?._id || donation.donor) === String(req.user._id)) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: 'Donor cannot claim their own food donation',
+      });
+    }
+
+    // Check if already claimed by another recipient
+    if (
+      donation.matchedRecipient &&
+      String(donation.matchedRecipient) !== String(req.user._id)
+    ) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: 'Donation has already been claimed by another recipient',
+      });
+    }
+
+    // Check if donation is delivered or cancelled
+    if (['delivered', 'cancelled'].includes(donation.status)) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: 'Donation is no longer available',
+      });
+    }
+
+    // If already matched to this recipient, return success
+    if (
+      donation.matchedRecipient &&
+      String(donation.matchedRecipient) === String(req.user._id)
+    ) {
+      const existingPopulated = await Donation.findById(donation._id)
+        .populate('donor', 'name email phone address')
+        .populate('matchedVolunteer', 'name email phone')
+        .populate('matchedRecipient', 'name email phone address');
+
+      return res.json({
+        success: true,
+        data: existingPopulated,
+        message: 'Food requested successfully! Assigned to you.',
+      });
+    }
+
+    donation.matchedRecipient = req.user._id;
+    donation.status = 'matched';
+    await donation.save();
+
+    const recipientUser = await User.findById(req.user._id);
+    const donorUser = await User.findById(donation.donor);
+
+    // Notify Donor
+    await Notification.create({
+      userId: donation.donor,
+      message: `Recipient "${recipientUser?.name || 'A recipient'}" accepted/requested your food donation of "${donation.foodType}".`,
+    });
+
+    // Notify Recipient
+    await Notification.create({
+      userId: req.user._id,
+      message: `You successfully requested "${donation.foodType}" from donor ${donorUser?.name || ''}. Waiting for volunteer pickup.`,
+    });
+
+    // Notify Volunteers about the new matched request needing pickup & delivery
+    const volunteers = await User.find({ role: 'volunteer' });
+    for (const vol of volunteers) {
+      await Notification.create({
+        userId: vol._id,
+        message: `New Pickup Task: Donor "${donorUser?.name || 'Donor'}" is donating "${donation.foodType}" for recipient "${recipientUser?.name || 'Recipient'}".`,
+      });
+    }
+
+    const updated = await Donation.findById(donation._id)
+      .populate('donor', 'name email phone address')
+      .populate('matchedVolunteer', 'name email phone')
+      .populate('matchedRecipient', 'name email phone address');
+
+    res.json({
+      success: true,
+      data: updated,
+      message: 'Food requested successfully! Volunteers notified for pickup.',
+    });
+  } catch (error) {
+    console.error('Request donation error:', error);
+    res.status(500).json({ success: false, data: null, message: 'Server error requesting donation' });
+  }
+};
 
 module.exports = {
   createDonation,
@@ -228,6 +340,7 @@ module.exports = {
   getDonationById,
   updateDonationStatus,
   uploadProof,
+  requestDonation,
   createDonationValidation,
   getPublicFeed,
 };

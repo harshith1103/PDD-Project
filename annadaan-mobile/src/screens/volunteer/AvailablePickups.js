@@ -61,24 +61,15 @@ const AvailablePickups = ({ navigation }) => {
     fetchData();
   };
 
-  const handleAcceptPress = (task) => {
-    setSelectedTask(task);
-    setShowRecipientModal(true);
-  };
-
-  const handleAccept = async (recipientId) => {
-    if (!selectedTask) return;
-    setAcceptingId(selectedTask._id);
-    setShowRecipientModal(false);
+  const handleDirectAccept = async (taskId, recipientId, foodType) => {
+    setAcceptingId(taskId);
     try {
-      const response = await api.put(`/volunteers/tasks/${selectedTask._id}/accept`, {
-        recipientId,
-      });
+      const response = await api.put(`/volunteers/tasks/${taskId}/accept`, { recipientId });
       if (response.data.success) {
         Toast.show({
           type: 'success',
-          text1: 'Pickup Accepted! 🎉',
-          text2: `You accepted "${selectedTask.foodType}"`,
+          text1: 'Task Accepted! 🚴',
+          text2: `Collect "${foodType}" from donor & deliver to recipient.`,
         });
         fetchData();
       }
@@ -90,8 +81,26 @@ const AvailablePickups = ({ navigation }) => {
       });
     } finally {
       setAcceptingId(null);
-      setSelectedTask(null);
     }
+  };
+
+  const handleAcceptPress = (task) => {
+    const recId = task.matchedRecipient?._id || (typeof task.matchedRecipient === 'string' ? task.matchedRecipient : null);
+    if (recId) {
+      handleDirectAccept(task._id, recId, task.foodType);
+    } else {
+      setSelectedTask(task);
+      setShowRecipientModal(true);
+    }
+  };
+
+  const handleAccept = async (recipientId) => {
+    if (!selectedTask) return;
+    const taskId = selectedTask._id;
+    const foodType = selectedTask.foodType;
+    setShowRecipientModal(false);
+    setSelectedTask(null);
+    await handleDirectAccept(taskId, recipientId, foodType);
   };
 
   if (loading && !refreshing) return <LoadingSpinner />;
@@ -103,14 +112,20 @@ const AvailablePickups = ({ navigation }) => {
         data={tasks}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <View>
+          <View style={{ marginBottom: 16 }}>
             <DonationCard donation={item} showDonor />
             <Button
-              title={acceptingId === item._id ? 'Accepting...' : 'Accept Pickup'}
+              title={
+                acceptingId === item._id
+                  ? 'Accepting...'
+                  : item.matchedRecipient
+                  ? '🚴 Accept Request & Deliver'
+                  : 'Accept Pickup Task'
+              }
               onPress={() => handleAcceptPress(item)}
               loading={acceptingId === item._id}
               disabled={!!acceptingId}
-              style={{ marginTop: -4, marginBottom: 12 }}
+              style={{ marginTop: -4 }}
             />
           </View>
         )}

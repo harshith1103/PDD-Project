@@ -103,13 +103,13 @@ const IncomingDonations = () => {
         renderItem={({ item }) => (
           <View style={styles.itemContainer}>
             <DonationCard donation={item} showDonor />
-            {item.matchedVolunteer && (
+            {item.matchedVolunteer ? (
               <View style={styles.volunteerInfo}>
                 <Text style={styles.volunteerLabel}>Volunteer: </Text>
                 <Text style={styles.volunteerName}>{item.matchedVolunteer.name}</Text>
               </View>
-            )}
-            {item.status === 'delivered' && (
+            ) : null}
+            {item.status === 'delivered' ? (
               <Button
                 title={confirmingId === item._id ? 'Confirming...' : '✅ Confirm Receipt'}
                 onPress={() => handleConfirm(item._id)}
@@ -118,12 +118,12 @@ const IncomingDonations = () => {
                 variant="secondary"
                 style={{ marginTop: 4, marginBottom: 8 }}
               />
-            )}
-            {item.status === 'picked_up' && (
+            ) : null}
+            {item.status === 'picked_up' ? (
               <View style={styles.etaContainer}>
                 <Text style={styles.etaText}>🚴 On the way to you...</Text>
               </View>
-            )}
+            ) : null}
           </View>
         )}
         refreshControl={

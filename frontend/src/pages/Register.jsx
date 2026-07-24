@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,21 +15,75 @@ const Register = () => {
     address: '',
     role: 'donor',
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const newErrors = {};
+    const trimmedEmail = formData.email.trim();
+    const trimmedPhone = formData.phone.trim();
+
+    // 1. Email format check (@gmail.com official format)
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (!trimmedEmail) {
+      newErrors.email = 'Email address is required';
+    } else if (!gmailRegex.test(trimmedEmail)) {
+      newErrors.email = 'Email must be an official @gmail.com address (e.g. user@gmail.com)';
+    }
+
+    // 2. Password length check (at least 6 characters)
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long';
+    }
+
+    // 3. Phone number check (10 digits if provided)
+    const phoneRegex = /^\d{10}$/;
+    if (trimmedPhone && !phoneRegex.test(trimmedPhone)) {
+      newErrors.phone = 'Phone number must be exactly 10 digits (e.g. 9876543210)';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
 
     try {
-      const res = await API.post('/auth/register', formData);
+      const res = await API.post('/auth/register', {
+        ...formData,
+        email: trimmedEmail,
+        phone: trimmedPhone,
+      });
       if (res.data.success) {
-        toast.success('Registration successful! Please log in.');
-        navigate('/login');
+        toast.success('Registration successful!');
+        const { token, user } = res.data.data || {};
+        if (token && user) {
+          login(token, user);
+          const roleRoutes = {
+            donor: '/donor',
+            volunteer: '/volunteer',
+            recipient: '/recipient',
+            admin: '/admin',
+          };
+          navigate(roleRoutes[user.role] || '/');
+        } else {
+          navigate('/login');
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');
@@ -68,7 +124,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email Address
+                Email Address (@gmail.com)
               </label>
               <input
                 type="email"
@@ -77,9 +133,16 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-gray-800"
-                placeholder="you@example.com"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-gray-800 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-primary-500'
+                }`}
+                placeholder="you@gmail.com"
               />
+              {errors.email ? (
+                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Must be an official @gmail.com address</p>
+              )}
             </div>
 
             <div>
@@ -94,9 +157,16 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-gray-800"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-gray-800 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-primary-500'
+                }`}
                 placeholder="Min. 6 characters"
               />
+              {errors.password ? (
+                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Must be at least 6 characters long</p>
+              )}
             </div>
 
             <div>
@@ -109,9 +179,17 @@ const Register = () => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-gray-800"
-                placeholder="9876543210"
+                maxLength={10}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent outline-none transition-all text-gray-800 ${
+                  errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-primary-500'
+                }`}
+                placeholder="10-digit mobile number (optional)"
               />
+              {errors.phone ? (
+                <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Must be exactly 10 digits</p>
+              )}
             </div>
 
             <div>

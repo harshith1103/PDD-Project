@@ -83,7 +83,7 @@ const ProfileScreen = () => {
             </View>
           </View>
 
-          {user?.location && (user.location.lat || user.location.lng) && (
+          {Boolean(user?.location && (user.location.lat || user.location.lng)) ? (
             <>
               <View style={styles.divider} />
               <View style={styles.infoRow}>
@@ -96,7 +96,7 @@ const ProfileScreen = () => {
                 </View>
               </View>
             </>
-          )}
+          ) : null}
         </Card>
 
         {/* App Info */}

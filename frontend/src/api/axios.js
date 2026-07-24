@@ -3,8 +3,9 @@ import axios from 'axios';
 const getBaseUrl = () => {
   if (typeof window !== 'undefined' && window.location && window.location.hostname) {
     const hostname = window.location.hostname;
-    if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:5000/api`;
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    if (hostname) {
+      return `${protocol}//${hostname}:5000/api`;
     }
   }
   return 'http://localhost:5000/api';

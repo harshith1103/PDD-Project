@@ -9,6 +9,7 @@ const {
   getDonationById,
   updateDonationStatus,
   uploadProof,
+  requestDonation,
   createDonationValidation,
   getPublicFeed,
 } = require('../controllers/donationController');
@@ -24,6 +25,9 @@ router.get('/my', authMiddleware, roleMiddleware('donor'), getMyDonations);
 
 // Admin/volunteer/recipient views all donations
 router.get('/', authMiddleware, roleMiddleware('admin', 'volunteer', 'recipient'), getAllDonations);
+
+// Recipient requests/selects available food donation from donor
+router.put('/:id/request', authMiddleware, roleMiddleware('recipient'), requestDonation);
 
 // Get single donation by ID
 router.get('/:id', authMiddleware, getDonationById);
