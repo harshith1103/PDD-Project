@@ -1,0 +1,40 @@
+name: API Load Testing & Performance Benchmark
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/load-test.yml'
+  workflow_dispatch:
+
+jobs:
+  api-load-testing:
+    name: 100 VU / 1 Minute API Load Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install Backend Dependencies
+        run: |
+          cd backend && npm install
+
+      - name: 🚀 Start Backend API Server in Background
+        run: |
+          cd backend && node server.js &
+          sleep 4
+          curl -I http://localhost:5000/api/health || true
+
+      - name: 📊 Execute 100 VU API Load Test
+        run: |
+          cd backend && VUS=100 DURATION_SEC=10 node scripts/run-load-test.js
+
+      - name: 📈 Parse Load Test Performance & Post to Step Summary
+        run: |
+          cd backend && node scripts/parseK6Summary.js

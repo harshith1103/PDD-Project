@@ -12,5 +12,8 @@
     "db:view": "npm --prefix backend run db:view",
     "seed": "npm --prefix backend run seed",
     "test:selenium": "npm --prefix selenium-tests test"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
   }
 }
