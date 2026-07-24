@@ -1,0 +1,15 @@
+{
+  "name": "annadaan-connect",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Annadaan Connect - Smart Food Redistribution Platform",
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "start:backend": "npm --prefix backend run dev",
+    "start:frontend": "npm --prefix frontend run dev",
+    "start:mobile": "npm --prefix annadaan-mobile start",
+    "load-test": "npm --prefix backend run load-test",
+    "db:view": "npm --prefix backend run db:view",
+    "seed": "npm --prefix backend run seed"
+  }
+}
