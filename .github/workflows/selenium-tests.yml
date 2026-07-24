@@ -1,0 +1,45 @@
+name: Selenium E2E Tests & Excel Report Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  selenium-test-execution:
+    name: Run 300 E2E Selenium Tests & Generate Excel Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install Root & Selenium Dependencies
+        run: |
+          npm install
+          cd selenium-tests && npm install
+
+      - name: 🧪 Execute 300 Selenium Test Cases
+        run: |
+          npm run test:selenium
+
+      - name: 📤 Upload Excel Report as GitHub Actions Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Selenium-300-Test-Cases-Report
+          path: selenium-tests/test_results.xlsx
+          retention-days: 30
+
+      - name: 🚀 Commit & Push Updated Excel Report to Repository
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci(actions): update Selenium 300 test cases Excel report [skip ci]"
+          file_pattern: "selenium-tests/test_results.xlsx"
